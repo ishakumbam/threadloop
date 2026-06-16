@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+/* Threadloop — neutral editorial theme.
+   Warm bone canvas, near-black ink, soft stone grays, a single clay accent.
+   Eye-catching through type, imagery and contrast — not color. */
+:root {
+  --background: #f4f1ea; /* warm bone */
+  --foreground: #1a1714; /* near-black ink */
+  --bone: #f4f1ea;
+  --paper: #fbfaf6; /* card surface, slightly lighter */
+  --ink: #1a1714;
+  --ink-soft: #4a443d; /* muted text */
+  --stone: #e7e2d8; /* hairlines / chips */
+  --stone-2: #d8d2c5; /* borders */
+  --clay: #b5765a; /* the one accent */
+  --clay-deep: #8f5942;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-bone: var(--bone);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-stone: var(--stone);
+  --color-stone-2: var(--stone-2);
+  --color-clay: var(--clay);
+  --color-clay-deep: var(--clay-deep);
+  --font-sans: var(--font-geist-sans);
+  --font-heading: var(--font-display);
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Infinite marquee for the brand strip. */
+@keyframes tl-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.tl-marquee {
+  animation: tl-marquee 30s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-marquee {
+    animation: none;
+  }
+}

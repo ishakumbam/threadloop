@@ -1,0 +1,129 @@
+// Threadloop data model
+// SQLite for local/dev. To deploy, switch `provider` to "postgresql" and point
+// DATABASE_URL (in prisma.config.ts) at a Supabase/Postgres instance.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// A shopper. Auth is a lightweight passwordless stub for the foundation;
+// swap for Clerk / Supabase Auth later without touching the rest of the schema.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String? // null for anonymous guests; set when they create an account
+  createdAt    DateTime @default(now())
+
+  profile       TasteProfile?
+  saved         SavedItem[]
+  clicks        ClickOut[]
+  notifications Notification[]
+}
+
+// The shopper's style preferences, captured by the quiz. One per user.
+// JSON columns hold string arrays (vibes, sizes, categories, avoided tags).
+model TasteProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  vibes      Json // e.g. ["streetwear","minimal"]
+  sizes      Json // e.g. ["M","32"]
+  categories Json // preferred categories ["tops","sneakers"]
+  avoid      Json // tags to avoid ["fur","skinny"]
+  budgetMin  Int  @default(0)
+  budgetMax  Int  @default(250)
+
+  updatedAt DateTime @updatedAt
+}
+
+// A store/brand we send shoppers to. Outbound links are wrapped by /go.
+model Retailer {
+  id               String    @id @default(cuid())
+  slug             String    @unique
+  name             String
+  brandColor       String // hex, used for playful gradient cards
+  affiliateNetwork String? // "rakuten" | "awin" | "impact" | null (curated)
+  products         Product[]
+}
+
+// A curated product we surface. No real images yet — `gradient` drives the
+// card visual so the catalog looks great before image assets exist.
+model Product {
+  id          String   @id @default(cuid())
+  title       String
+  brand       String
+  category    String // tops | bottoms | dresses | sneakers | outerwear | accessories
+  price       Int // whole currency units (USD)
+  currency    String   @default("USD")
+  imageUrl    String? // the retailer's own product photo (from the affiliate feed)
+  gradient    String // legacy color tint, used only as a last-resort fallback
+  vibes       Json // ["streetwear","minimal"]
+  colors      Json // ["black","cream"]
+  sizes       Json // ["S","M","L"]
+  tags        Json // freeform descriptors used for avoid-matching
+  externalUrl String // where /go redirects the shopper to buy
+  retailerId  String
+  retailer    Retailer @relation(fields: [retailerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  // Merchandising signals — driven by the affiliate feed in production, by the
+  // daily-refresh job in this foundation.
+  isLimited     Boolean   @default(false) // limited-edition drop
+  stock         Int? // remaining units for limited drops (scarcity)
+  arrivedAt     DateTime  @default(now()) // when it landed in the catalog ("New today")
+  dropEndsAt    DateTime? // limited-edition countdown end
+  previousPrice Int? // set when price drops, for "was $X" display
+
+  saved  SavedItem[]
+  clicks ClickOut[]
+}
+
+// In-app notifications: new arrivals, limited drops, price drops, back-in-stock.
+// One row per user per event so we can show unread counts and a feed.
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String // new_arrival | limited_drop | price_drop | back_in_stock
+  title     String
+  body      String
+  productId String? // deep-link target, if any
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+}
+
+// A shopper's wishlist entry.
+model SavedItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+// Every tracked click-out. This is the monetization signal — one row per
+// redirect to a retailer, so we can attribute commissions later.
+model ClickOut {
+  id        String   @id @default(cuid())
+  productId String
+  userId    String?
+  ref       String? // surface the click came from ("discover","closet")
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
