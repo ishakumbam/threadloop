@@ -8,12 +8,18 @@ const connectionString =
   process.env.POSTGRES_URL ??
   process.env.POSTGRES_PRISMA_URL;
 
+// Cloud Postgres (Vercel/Neon/Supabase) needs TLS; local Postgres usually doesn't.
+const remote = Boolean(connectionString) && !/localhost|127\.0\.0\.1/.test(connectionString!);
+
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    adapter: new PrismaPg({ connectionString }),
+    adapter: new PrismaPg({
+      connectionString,
+      ...(remote ? { ssl: { rejectUnauthorized: false } } : {}),
+    }),
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
 

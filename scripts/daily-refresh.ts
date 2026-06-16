@@ -13,7 +13,13 @@ import { deliver } from "../src/lib/delivery";
 
 const connectionString =
   process.env.DATABASE_URL ?? process.env.POSTGRES_URL ?? process.env.POSTGRES_PRISMA_URL;
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+const remote = Boolean(connectionString) && !/localhost|127\.0\.0\.1/.test(connectionString!);
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({
+    connectionString,
+    ...(remote ? { ssl: { rejectUnauthorized: false } } : {}),
+  }),
+});
 
 const DAY = 24 * 60 * 60 * 1000;
 const pickN = <T>(arr: T[], n: number): T[] =>

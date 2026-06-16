@@ -4,7 +4,13 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 const connectionString =
   process.env.DATABASE_URL ?? process.env.POSTGRES_URL ?? process.env.POSTGRES_PRISMA_URL;
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+const remote = Boolean(connectionString) && !/localhost|127\.0\.0\.1/.test(connectionString!);
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({
+    connectionString,
+    ...(remote ? { ssl: { rejectUnauthorized: false } } : {}),
+  }),
+});
 
 const retailers = [
   { slug: "everlane", name: "Everlane", brandColor: "#222222", affiliateNetwork: "impact" },
@@ -91,6 +97,15 @@ const sizesFor = (c: string): string[] =>
   : ["XS", "S", "M", "L", "XL"];
 
 async function main() {
+  // Build-time seeding (SEED_IF_EMPTY) must never wipe a populated DB.
+  if (process.env.SEED_IF_EMPTY) {
+    const existing = await prisma.product.count().catch(() => 0);
+    if (existing > 0) {
+      console.log(`Catalog already has ${existing} products — skipping seed.`);
+      return;
+    }
+  }
+
   console.log("Seeding…");
   await prisma.notification.deleteMany();
   await prisma.clickOut.deleteMany();

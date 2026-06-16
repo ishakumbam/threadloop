@@ -29,14 +29,23 @@ export async function POST(request: Request) {
     );
   }
 
-  const user = await ensureUser();
-  const data = parsed.data;
+  try {
+    const user = await ensureUser();
+    const data = parsed.data;
 
-  await prisma.tasteProfile.upsert({
-    where: { userId: user.id },
-    create: { userId: user.id, ...data },
-    update: { ...data },
-  });
+    await prisma.tasteProfile.upsert({
+      where: { userId: user.id },
+      create: { userId: user.id, ...data },
+      update: { ...data },
+    });
 
-  return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    // Surface the real reason (usually a DB/connection issue) instead of a generic 500.
+    console.error("profile save failed:", e);
+    return NextResponse.json(
+      { error: "Database error saving profile", detail: e instanceof Error ? e.message : String(e) },
+      { status: 500 },
+    );
+  }
 }
