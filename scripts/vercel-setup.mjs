@@ -4,7 +4,11 @@
 // the /api/health route instead.
 import { execSync } from "node:child_process";
 
+// Schema changes (db push) need the DIRECT (non-pooling) connection — a pooled
+// pgbouncer URL breaks DDL. Prefer the unpooled var when present.
 const url =
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.DATABASE_URL_UNPOOLED ||
   process.env.DATABASE_URL ||
   process.env.POSTGRES_URL ||
   process.env.POSTGRES_PRISMA_URL;
