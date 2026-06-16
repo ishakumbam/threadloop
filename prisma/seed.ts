@@ -1,9 +1,10 @@
 import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const url = (process.env.DATABASE_URL ?? "file:./dev.db").replace(/^file:/, "");
-const prisma = new PrismaClient({ adapter: new PrismaBetterSqlite3({ url }) });
+const connectionString =
+  process.env.DATABASE_URL ?? process.env.POSTGRES_URL ?? process.env.POSTGRES_PRISMA_URL;
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
 const retailers = [
   { slug: "everlane", name: "Everlane", brandColor: "#222222", affiliateNetwork: "impact" },

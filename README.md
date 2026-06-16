@@ -28,15 +28,29 @@ ingestion (seed) → catalog → recommendation → click-out tracking → UI
 | Tracked redirect | `src/app/go/[productId]/route.ts` → logs `ClickOut`         |
 | UI               | `src/components/*` + `src/app/{quiz,discover,closet}`       |
 
-## Run
+## Run (local)
+
+Postgres-backed. Use any Postgres URL (Vercel Postgres / Neon / Supabase free tier),
+or a local Postgres. Put it in `.env` as `DATABASE_URL` (see `.env.example`).
 
 ```bash
 npm install
-npx prisma migrate dev        # create the SQLite db
-npx prisma generate           # generate the client
-npm run seed                  # build the 100+ catalog (real brand images)
+npx prisma db push            # create the schema in your Postgres
+npm run seed                  # load the 43-product catalog (real brand images)
 npm run dev -- -p 3100        # http://localhost:3100
 ```
+
+## Deploy to Vercel
+
+1. Import the repo in Vercel.
+2. In the project's **Storage** tab, create a **Postgres** database — Vercel injects
+   `DATABASE_URL` into the deployment automatically.
+3. Push the schema + data into it once (from your machine, with that `DATABASE_URL`
+   in `.env`): `npx prisma db push && npm run seed`.
+4. Redeploy. The build runs `prisma generate && next build`; the running app connects
+   to the same Postgres. Done.
+
+> The build script generates the Prisma client, so a fresh clone builds cleanly.
 
 ## Daily updates, drops & notifications
 
