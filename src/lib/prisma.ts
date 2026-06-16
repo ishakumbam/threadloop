@@ -4,8 +4,9 @@ import { PrismaPg } from "@prisma/adapter-pg";
 // Postgres connection string. Locally set DATABASE_URL in .env; on Vercel the
 // Postgres integration injects DATABASE_URL / POSTGRES_URL automatically.
 const connectionString =
-  process.env.DATABASE_URL ??
-  process.env.POSTGRES_URL ??
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.PRISMA_DATABASE_URL ||
   process.env.POSTGRES_PRISMA_URL;
 
 // Cloud Postgres (Vercel/Neon/Supabase) needs TLS; local Postgres usually doesn't.

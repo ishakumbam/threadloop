@@ -9,6 +9,12 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Accept whatever the host injected: Vercel Postgres (DATABASE_URL/POSTGRES_URL),
+    // Prisma Postgres (PRISMA_DATABASE_URL), or pooled (POSTGRES_PRISMA_URL).
+    url:
+      process.env["DATABASE_URL"] ||
+      process.env["POSTGRES_URL"] ||
+      process.env["PRISMA_DATABASE_URL"] ||
+      process.env["POSTGRES_PRISMA_URL"],
   },
 });
